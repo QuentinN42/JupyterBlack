@@ -45,3 +45,15 @@ def get_tmpfile_name() -> str:
     while base_name + str(number) in os.listdir("./"):
         number += 1
     return base_name + str(number)
+
+
+def main(filename: str, args: list = None):
+    if args is None:
+        args = []
+    formatter(filename, get_tmpfile_name(), args)
+
+
+if __name__ == '__main__':
+    fn = input("File name :")
+    args = input("args :").split(" ")
+    main(fn, args)
