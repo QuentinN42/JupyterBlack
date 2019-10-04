@@ -1,5 +1,6 @@
 from useful import get_json, write_json
 import subprocess
+import os
 
 
 def formatter(filename: str, tmpfile_name: str, args: list = None):
@@ -32,3 +33,15 @@ def formatter(filename: str, tmpfile_name: str, args: list = None):
     write_json(filename, json)
     subprocess.call(["rm", tmpfile_name])
     return True
+
+
+def get_tmpfile_name() -> str:
+    """
+    search an unused file name
+    :return: free file name
+    """
+    base_name = "_jblack_tmp"
+    number = 0
+    while base_name + str(number) in os.listdir("./"):
+        number += 1
+    return base_name + str(number)
