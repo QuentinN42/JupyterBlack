@@ -55,5 +55,5 @@ def main(filename: str, args: list = None):
 
 if __name__ == '__main__':
     fn = input("File name :")
-    args = input("args :").split(" ")
-    main(fn, args)
+    a = input("args :").split(" ")
+    main(fn, a)
