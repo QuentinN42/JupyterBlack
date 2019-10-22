@@ -1,122 +1,49 @@
-from __future__ import absolute_import
-
-import utils.logger as logger
-import pkg_resources
-import sys
-
-import click
-
-import commons.config as config
-import docker_helper as docker
-import ecs_helper as ecs_helper
-import utils.helper as utils
-
-VERSION = pkg_resources.require("dokr")[0].version
+import argparse
+from useful import get_json
 
 
-def debug_logging(verbose):
-    if verbose == 1:
-        click.echo(click.style("Debugging Level is set", fg="green"))
-        logger.enable_debug()
+class Args:
+    def __init__(self):
+        parser = argparse.ArgumentParser()
+
+        parser.add_argument("paths", help="The path(s) of the file(s).")
+
+        self.black_arguments_names: list = []
+        for arg in get_json("arguments.json"):  # TODO : set up the bools params
+            self.black_arguments_names.append(arg["long"].replace("-", "_"))
+            if "short" in arg.keys():
+                parser.add_argument(
+                    "-" + arg["short"],
+                    "--" + arg["long"],
+                    help=arg["help"],
+                    default=None,
+                )
+            else:
+                parser.add_argument("--" + arg["long"], help=arg["help"], default=None)
+        self.args = parser.parse_args()
+
+    @property
+    def files(self):
+        return self.args.paths
+
+    @property
+    def for_black(self):
+        return " ".join(
+            [
+                f"--{name.replace('_', '-')} {vars(self.args)[name]}"
+                for name in self.black_arguments_names
+                if vars(self.args)[name] is not None
+            ]
+        )
+
+    def run(self):
+        print(">>" + self.for_black + "<<")
 
 
-@click.group()
-@click.version_option(version=VERSION, prog_name="dokr")
-def main():  # pragma: no cover
+def main():
+    args = Args()
+    args.run()
+
+
+if __name__ == "__main__":
     pass
-
-
-@click.command()
-@click.option("--ip", help="find Ip of a machine based on the given pattern")
-@click.option("--v", count=True, help="Enable verbose logging")
-def aws(ip, v):
-    if ip != None:
-        ecs_helper.find_ip(ip)
-
-
-@click.command()
-@click.option(
-    "--clean", help="delete all images from your local docker matching the pattern"
-)
-@click.option("--clean-all", count=True, help="Clean the whole docker system")
-@click.option("--push", help="Push Image matching a pattern")
-@click.option(
-    "--tag",
-    type=(str, str),
-    multiple=True,
-    help="Add a tag given to an image --tag <image_search_key> <tag_name>",
-)
-@click.option("--v", count=True, help="Enable verbose logging")
-def dock(clean, clean_all, push, tag, v):
-    debug_logging(v)
-    if clean != None:
-        docker.clean_up(clean)
-    if tag != None:
-        for (key, value) in tag:
-            docker.add_build_tag(key, value)
-    if clean_all == 1:
-        docker.clean_all()
-    if push != None:
-        docker.push_image(push)
-
-
-@click.command()
-@click.argument("login", required=False)
-@click.argument("deploy", required=False)
-@click.argument("log", required=False)
-@click.option("--cluster", help="Name of your cluster")
-@click.option("--service", help="Name of your service")
-@click.option("--tag", help="Tag of your image")
-@click.option("--v", count=True, help="Enable verbose logging")
-def ecs(login, deploy, log, cluster, service, tag, v):
-    debug_logging(v)
-    if login == "login":
-        ecs_helper.login_ecs()
-    if login == "deploy":
-        if cluster == None:
-            cluster = click.prompt("Give a cluster Name ", type=str)
-        if service == None:
-            service = click.prompt("Give a Service Name", type=str)
-        if tag == None:
-            tag = click.prompt("Give a Tag Name", type=str)
-        ecs_helper.deploy(cluster, service, tag)
-    if login == "log":
-        ecs_helper.ecs_log()
-
-
-@click.command()
-@click.option("--app", help="Enable verbose logging")
-@click.option("--v", count=True, help="Enable verbose logging")
-def configure(app, v):
-    debug_logging(v)
-    if app != None:
-        docker.add_profile(app)
-    else:
-        docker.add_default_profile()
-
-
-@click.command()
-@click.option(
-    "--app",
-    help="Give profile name to deploy [use dokr configure --app to create one] ",
-)
-@click.option("--tag", help="Give tag information")
-@click.option("--v", count=True, help="Enable verbose logging")
-def run(app, tag, v):
-    debug_logging(v)
-    if app is not None and tag is not None:
-        docker.run_profile(app, tag)
-    elif app is not None:
-        docker.run_profile(app, "")
-    else:
-        docker.run_all()
-
-
-main.add_command(dock)
-main.add_command(ecs)
-main.add_command(aws)
-main.add_command(configure)
-main.add_command(run)
-
-if __name__ == "__main__":  # pragma: no cover
-    main()
