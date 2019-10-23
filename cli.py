@@ -1,16 +1,37 @@
 import argparse
 from useful import get_json
+from worker import main as work
 
 
 class Args:
     def __init__(self):
         parser = argparse.ArgumentParser()
 
-        parser.add_argument("paths", help="The path(s) of the file(s).")
+        parser.add_argument("paths", help="The path(s) of the file(s).",nargs="+",)
 
-        self.black_arguments_names: list = []
-        for arg in get_json("arguments.json"):  # TODO : set up the bools params
-            self.black_arguments_names.append(arg["long"].replace("-", "_"))
+        self.black_args: list = []
+        self.black_args_b: list = []
+        for arg in get_json("arguments.json"):
+            if "type" in arg.keys():
+                if arg["type"] == "bool":
+                    self.black_args_b.append(arg["long"].replace("-", "_"))
+                    if "short" in arg.keys():
+                        parser.add_argument(
+                            "-" + arg["short"],
+                            "--" + arg["long"],
+                            help=arg["help"],
+                            default=None,
+                            type=bool,
+                            nargs="?",
+                            const=True,
+                        )
+                    else:
+                        parser.add_argument("--" + arg["long"], help=arg["help"], default=None,
+                            type=bool,
+                            nargs="?",
+                            const=True,)
+                    continue
+            self.black_args.append(arg["long"].replace("-", "_"))
             if "short" in arg.keys():
                 parser.add_argument(
                     "-" + arg["short"],
@@ -31,13 +52,20 @@ class Args:
         return " ".join(
             [
                 f"--{name.replace('_', '-')} {vars(self.args)[name]}"
-                for name in self.black_arguments_names
+                for name in self.black_args
                 if vars(self.args)[name] is not None
+            ]
+            +
+            [
+                "--" + name.replace('_', '-')
+                for name in self.black_args_b
+                if vars(self.args)[name] is True
             ]
         )
 
     def run(self):
-        print(">>" + self.for_black + "<<")
+        for file in self.files:
+            work(file, self.for_black.split(" "))
 
 
 def main():
