@@ -3,6 +3,9 @@ import subprocess
 import os
 
 
+base_name = "_jblack_tmp"
+
+
 def formatter(filename: str, tmpfile_name: str, args: list = None):
     """
 
@@ -40,7 +43,7 @@ def get_tmpfile_name() -> str:
     search an unused file name
     :return: free file name
     """
-    base_name = "_jblack_tmp"
+    global base_name
     number = 0
     while base_name + str(number) in os.listdir("./"):
         number += 1
