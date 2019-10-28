@@ -14,7 +14,7 @@ def formatter(filename: str, tmpfile_name: str, args: list = None):
     :param args: arguments send to black
     :return: True if no errors else raise the error
     """
-    if args is None:
+    if args is None or args == ['']:
         args = []
     json = get_json(filename)
     for i, cell in enumerate(json["cells"]):
