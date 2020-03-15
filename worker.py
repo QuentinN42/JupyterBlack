@@ -1,4 +1,4 @@
-from useful import get_json, write_json
+from .useful import get_json, write_json
 import subprocess
 import os
 

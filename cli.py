@@ -1,6 +1,6 @@
 import argparse
-from useful import get_json
-from worker import main as work
+from .useful import get_json
+from .worker import main as work
 import os
 
 
